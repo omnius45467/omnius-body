@@ -1,5 +1,6 @@
 var alexa = require('alexa-app');
 var app = new alexa.app();
+var Cylon = require("cylon");
 
 /**
  * LaunchRequest.
@@ -13,44 +14,36 @@ app.launch(function(request,response) {
 /**
  * IntentRequest.
  */
-app.intent('number',
+app.intent('DirectionIntent',
   {
-    'slots':{'number':'NUMBER'},
-    'utterances':[ 'say the number {1-100|number}' ]
+    'slots':{'direction':'LIST_OF_DIRECTIONS'},
+    'utterances':[ 'go {direction} using LITERAL' ]
   },
   function(request,response) {
-    var number = request.slot('number');
-    response.say('You asked for the number '+number);
-    response.shouldEndSession(true);
-    response.send();
+    var direction = request.slot('direction');
+	  if(direction != undefined){
+		  response.say('going '+direction);
+		  response.shouldEndSession(true);
+		  response.send();
+	  }
+
+	  Cylon.robot({
+		  connections: {
+			  arduino: { adaptor: 'firmata', port: '/dev/ttyACM0' }
+		  },
+
+		  devices: {
+			  led: { driver: 'led', pin: 13 }
+		  },
+
+		  work: function(my) {
+			  every((1).second(), my.led.toggle);
+		  }
+	  }).start();
+
   }
 );
 
-
-/**
- * IntentRequest w/ asynchronous response.
- */
-app.intent('checkStatus', 
-	{
-    	'utterances':[ 
-    		'status check', 'what is the status', 'tell me the status'
-    	]
-  	},
-	function(request,response) {
-		setTimeout(function() {		// simulate an async request
-
-	        // This is async and will run after a brief delay
-	        response.say('Status is operational, mam!');
-	    
-	        // Must call send to end the original request
-	        response.send();
-		
-		}, 250);
-
-	    // Return false immediately so alexa-app doesn't send the response
-	    return false;
-	}
-);
 
 
 /**
